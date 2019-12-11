@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+def get_snippets(filename):
+
+    snippets = {}
+    lines = open(filename).readlines()
+
+    inside = False
+    snippet = {'text': '', 'lang': '', 'meta': {}}
+
+    prevl = None
+    for l in lines:
+        if l[0:3] == "```":
+            if inside:
+                if 'name' in snippet['meta']:
+                    snippets[snippet['meta']['name']] = snippet
+                inside = False
+                snippet = {'text': '', 'lang': '', 'meta': {}}
+            else:
+                inside = True
+                lang = l[3:]
+                if prevl is not None:
+                    prevl = prevl.strip()
+                    if prevl[0:4] == "<!--" and prevl[-3:] == "-->" :
+                        prevl = prevl[4:-4]
+                        variables = prevl.split(';')
+                        for v in variables:
+                            split = v.split('=',1)
+                            snippet['meta'][split[0].strip()] = split[1].strip().strip('"')
+        else:
+            if inside:
+                snippet['text'] += l
+        prevl = l
+    return snippets
+
+if __name__ == "__main__":
+    import sys
+    snippets = get_snippets(sys.argv[1])
+    #print(snippets)
+    commands = sys.argv[2].split(',')
+
+    code = ''
+    for c in commands:
+        if c in snippets:
+            # name matches, add snippet code
+            code += '\n' + snippets[c]['text'] + '\n'
+        else:
+
+            if c[0] == "+":
+                # no match, + sign, add ad hoc code to previous line
+                code += c[1:]
+            else:
+                # no match, add ad hoc code as separate line
+                code += '\n' + c + "\n"
+        # get rid of newlines creating problems
+        code = code.strip()
+
+    print(code.strip())
+
