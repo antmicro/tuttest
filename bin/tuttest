@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+from collections import OrderedDict
+
 def get_snippets(filename):
 
-    snippets = {}
+    snippets = OrderedDict()
     lines = open(filename).readlines()
 
     inside = False
@@ -14,11 +16,15 @@ def get_snippets(filename):
             if inside:
                 if 'name' in snippet['meta']:
                     snippets[snippet['meta']['name']] = snippet
+                else:
+                    snippets['unnamed'+str(len(snippets))] = snippet
                 inside = False
                 snippet = {'text': '', 'lang': '', 'meta': {}}
             else:
                 inside = True
-                lang = l[3:]
+                lang = l[3:].strip()
+                if lang != "":
+                    snippet['meta']['lang'] = lang
                 if prevl is not None:
                     prevl = prevl.strip()
                     if prevl[0:4] == "<!--" and prevl[-3:] == "-->" :
@@ -36,24 +42,27 @@ def get_snippets(filename):
 if __name__ == "__main__":
     import sys
     snippets = get_snippets(sys.argv[1])
-    #print(snippets)
+    if len(sys.argv) < 3:
+        for s in snippets:
+            print(snippets[s]['text'])
+        sys.exit(0)
     commands = sys.argv[2].split(',')
 
-    code = ''
+    code = []
     for c in commands:
         if c in snippets:
             # name matches, add snippet code
-            code += '\n' + snippets[c]['text'] + '\n'
+            code.append(snippets[c]['text'].strip())
         else:
-
             if c[0] == "+":
-                # no match, + sign, add ad hoc code to previous line
-                code += c[1:]
+                # no match, + sign, add ad hoc code to previous line; don't strip!
+                code[len(code)-1] += c[1:]
+            elif c[0] == "#":
+                # select snippet by number
+                code.append(list(snippets.values())[int(c[1:])]['text'].strip())
             else:
                 # no match, add ad hoc code as separate line
-                code += '\n' + c + "\n"
-        # get rid of newlines creating problems
-        code = code.strip()
+                code.append(c.strip())
 
-    print(code.strip())
+    print('\n\n'.join(code))
 
