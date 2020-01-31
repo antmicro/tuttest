@@ -7,14 +7,13 @@ def parse_rst(text: str) -> OrderedDict:
     from docutils.core import publish_doctree, publish_from_doctree
     doctree = publish_doctree(text)
 
-    def is_code_block(node):
-        return (node.tagname == 'literal_block'
-            and 'code' in node.attributes['classes'])
+    def is_literal_block(node):
+        return (node.tagname == 'literal_block')
 
     # TODO: getting lang is tricky, as it's just one of the classes at this point. Another one is 'code', but there can also be user-set classes. Perhaps we should just match against a language array, but this is not optimal. Otherwise we have to do full RST parsing...
 
-    code_blocks = doctree.traverse(condition=is_code_block)
-    for block in code_blocks:
+    literal_blocks = doctree.traverse(condition=is_literal_block)
+    for block in literal_blocks:
         snippet = {'text': block.astext(), 'lang': '', 'meta': {}}
         name = ' '.join(block['names'])
         if name != '':
