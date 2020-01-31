@@ -6,6 +6,9 @@ setup(name='tuttest',
       url='http://github.com/antmicro/tuttest',
       author='Antmicro',
       author_email='mgielda@antmicro.com',
+      install_requires=[
+          'docutils', 'pygments'
+      ],
       license='MIT',
       scripts=['bin/tuttest'],
       packages=['tuttest'])
