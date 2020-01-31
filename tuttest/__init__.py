@@ -5,6 +5,12 @@ def parse_rst(text: str) -> OrderedDict:
 
     snippets = OrderedDict()
     from docutils.core import publish_doctree, publish_from_doctree
+
+    # Sphinx roles
+    from docutils.parsers.rst import roles
+    from docutils import nodes
+    roles.register_generic_role('kbd', nodes.emphasis)
+
     doctree = publish_doctree(text)
 
     def is_literal_block(node):
