@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections import OrderedDict
 from typing import Optional, List
+import re
 
 def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
 
@@ -88,7 +89,6 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
         prevl = l
     return snippets
 
-
 def get_snippets(filename: str, names: Optional[List[str]] = None) -> OrderedDict:
 
     text = open(filename).read()
@@ -98,3 +98,21 @@ def get_snippets(filename: str, names: Optional[List[str]] = None) -> OrderedDic
     else: # the default is markdown
         snippets = parse_markdown(text, names)
     return snippets
+
+from dataclasses import dataclass
+
+@dataclass
+class Command:
+    prompt: str
+    command: str
+    result: str = ''
+
+# currently only parse Renode snippets
+def parse_snippet(snippet: str) -> List[Command]:
+    prompt = re.compile(r'\n(\([a-zA-Z0-9\-]+\) *)([^\n]*)')
+    spl = prompt.split('\n'+snippet)
+    commands = []
+    for i in range(1,len(spl),3):
+        commands.append(Command(spl[i].strip(), spl[i+1], spl[i+2]))
+    print(commands)
+    return commands
