@@ -1,10 +1,11 @@
+from __future__ import annotations
 from collections import OrderedDict
-from typing import OrderedDict
+from typing import Optional, List
 
 def parse_rst(text: str) -> OrderedDict:
 
     snippets = OrderedDict()
-    from docutils.core import publish_doctree, publish_from_doctree
+    from docutils.core import publish_doctree
 
     # Sphinx roles
     from docutils.parsers.rst import roles
@@ -79,7 +80,7 @@ def parse_markdown(text: str) -> OrderedDict:
     return snippets
 
 
-def get_snippets(filename: str) -> OrderedDict:
+def get_snippets(filename: str, names: Optional[List[str]] = None) -> OrderedDict:
 
     text = open(filename).read()
     snippets = None
