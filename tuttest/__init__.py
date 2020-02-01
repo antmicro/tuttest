@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import Optional, List
 
-def parse_rst(text: str) -> OrderedDict:
+def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
 
     snippets = OrderedDict()
     from docutils.core import publish_doctree
@@ -20,18 +20,26 @@ def parse_rst(text: str) -> OrderedDict:
     # TODO: getting lang is tricky, as it's just one of the classes at this point. Another one is 'code', but there can also be user-set classes. Perhaps we should just match against a language array, but this is not optimal. Otherwise we have to do full RST parsing...
 
     literal_blocks = doctree.traverse(condition=is_literal_block)
-    for block in literal_blocks:
+
+    for idx, block in enumerate(literal_blocks):
         snippet = {'text': block.astext(), 'lang': '', 'meta': {}}
+
+        name = ''
         name = ' '.join(block['names'])
+
         if name != '':
             snippet['meta']['name'] = name
             snippets[snippet['meta']['name']] = snippet
         else:
-            snippets['unnamed'+str(len(snippets))] = snippet
+            if names and idx < len(names):
+                name = names[idx]
+            else:
+                name = 'unnamed'+str(idx)
+            snippets[name] = snippet
 
     return snippets
 
-def parse_markdown(text: str) -> OrderedDict:
+def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
 
     snippets = OrderedDict()
     lines = text.split('\n')
@@ -85,7 +93,7 @@ def get_snippets(filename: str, names: Optional[List[str]] = None) -> OrderedDic
     text = open(filename).read()
     snippets = None
     if filename.endswith('.rst') or filename.endswith('.rest'):
-        snippets = parse_rst(text)
+        snippets = parse_rst(text, names)
     else: # the default is markdown
-        snippets = parse_markdown(text)
+        snippets = parse_markdown(text, names)
     return snippets
