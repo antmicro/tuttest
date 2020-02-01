@@ -11,6 +11,7 @@ def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
     from docutils.parsers.rst import roles
     from docutils import nodes
     roles.register_generic_role('kbd', nodes.emphasis)
+    roles.register_generic_role('ref', nodes.emphasis)
 
     doctree = publish_doctree(text)
 
