@@ -114,5 +114,4 @@ def parse_snippet(snippet: str) -> List[Command]:
     commands = []
     for i in range(1,len(spl),3):
         commands.append(Command(spl[i].strip(), spl[i+1], spl[i+2]))
-    print(commands)
     return commands
