@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Optional, List
+from typing import Optional, List, Dict
 import re
 
 def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
@@ -23,14 +23,14 @@ def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
     literal_blocks = doctree.traverse(condition=is_literal_block)
 
     for idx, block in enumerate(literal_blocks):
-        snippet = {'text': block.astext(), 'lang': '', 'meta': {}}
+        snippet = Snippet(block.astext(), '', {})
 
         name = ''
         name = ' '.join(block['names'])
 
         if name != '':
-            snippet['meta']['name'] = name
-            snippets[snippet['meta']['name']] = snippet
+            snippet.meta['name'] = name
+            snippets[snippet.meta['name']] = snippet
         else:
             if names and idx < len(names):
                 name = names[idx]
@@ -46,7 +46,7 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
     lines = text.split('\n')
 
     inside = False
-    snippet = {'text': '', 'lang': '', 'meta': {}}
+    snippet = Snippet('', '', {})
 
     # TODO: fix for indented code blocks e.g. inside lists
 
@@ -57,20 +57,20 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
         if l[0:3] == "```":
             if inside:
                 # we've found the end of the previous snippet
-                snippet['text'] = '\n'.join(snippet_lines)
-                if 'name' in snippet['meta']:
-                    snippets[snippet['meta']['name']] = snippet
+                snippet.text = '\n'.join(snippet_lines)
+                if 'name' in snippet.meta:
+                    snippets[snippet.meta['name']] = snippet
                 else:
                     snippets['unnamed'+str(len(snippets))] = snippet
                 inside = False
             else:
                 # we're starting to parse a new snippet
                 inside = True
-                snippet = {'text': '', 'lang': '', 'meta': {}}
+                snippet = Snippet('', '', {})
                 snippet_lines = []
                 lang = l[3:].strip()
                 if lang != "":
-                    snippet['meta']['lang'] = lang
+                    snippet.lang = lang
                 # look in previous line for metadata in for key1=val1 ; key2=val2
                 if prevl is not None:
                     prevl = prevl.strip()
@@ -79,7 +79,7 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
                         variables = prevl.split(';')
                         for v in variables:
                             split = v.split('=',1)
-                            snippet['meta'][split[0].strip()] = split[1].strip().strip('"')
+                            snippet.meta[split[0].strip()] = split[1].strip().strip('"')
         else:
             # store current line into the line buffer
             if inside:
@@ -99,6 +99,12 @@ def get_snippets(filename: str, names: Optional[List[str]] = None) -> OrderedDic
     return snippets
 
 from dataclasses import dataclass
+
+@dataclass
+class Snippet:
+    text: List[str]
+    lang: str
+    meta: Dict
 
 @dataclass
 class Command:

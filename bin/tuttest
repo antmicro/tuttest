@@ -7,7 +7,7 @@ if __name__ == "__main__":
     snippets = get_snippets(sys.argv[1])
     if len(sys.argv) < 3:
         for s in snippets:
-            print(snippets[s]['text'])
+            print(snippets[s].text)
         sys.exit(0)
     commands = sys.argv[2].split(',')
 
@@ -15,14 +15,14 @@ if __name__ == "__main__":
     for c in commands:
         if c in snippets:
             # name matches, add snippet code
-            code.append(snippets[c]['text'].strip())
+            code.append(snippets[c].text.strip())
         else:
             if c[0] == "+":
                 # no match, + sign, add ad hoc code to previous line; don't strip!
                 code[len(code)-1] += c[1:]
             elif c[0] == "#":
                 # select snippet by number
-                code.append(list(snippets.values())[int(c[1:])]['text'].strip())
+                code.append(list(snippets.values())[int(c[1:])].text.strip())
             else:
                 # no match, add ad hoc code as separate line
                 code.append(c.strip())
