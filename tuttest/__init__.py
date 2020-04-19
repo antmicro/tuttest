@@ -34,6 +34,7 @@ def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
         else:
             if names and idx < len(names):
                 name = names[idx]
+                snippet.meta['name'] = name
             else:
                 name = 'unnamed'+str(idx)
             snippets[name] = snippet
