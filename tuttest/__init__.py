@@ -91,7 +91,7 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
 
 def get_snippets(filename: str, names: Optional[List[str]] = None, parse: bool = False) -> OrderedDict:
 
-    text = open(filename).read()
+    text = open(filename, 'r+', encoding='utf-8').read()
     snippets = None
     if filename.endswith('.rst') or filename.endswith('.rest'):
         snippets = parse_rst(text, names)
