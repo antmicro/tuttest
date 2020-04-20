@@ -2,7 +2,7 @@ from collections import OrderedDict
 from typing import Optional, List, Dict
 import re
 
-def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
+def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -> OrderedDict:
 
     snippets = OrderedDict()
     from docutils.core import publish_doctree
@@ -12,6 +12,10 @@ def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
     from docutils import nodes
     roles.register_generic_role('kbd', nodes.emphasis)
     roles.register_generic_role('ref', nodes.emphasis)
+
+    # custom roles e.g. extlinks
+    for role in extra_roles:
+        roles.register_generic_role(role, nodes.emphasis)
 
     doctree = publish_doctree(text)
 
@@ -41,7 +45,7 @@ def parse_rst(text: str, names: Optional[List[str]]) -> OrderedDict:
 
     return snippets
 
-def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
+def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
 
     snippets = OrderedDict()
     lines = text.split('\n')
@@ -89,12 +93,13 @@ def parse_markdown(text: str, names: Optional[List[str]]) -> OrderedDict:
         prevl = l
     return snippets
 
-def get_snippets(filename: str, names: Optional[List[str]] = None, parse: bool = False) -> OrderedDict:
+def get_snippets(filename: str, *, names: List[str] = None, extra_roles: List[str] = [], parse: bool = False) -> OrderedDict:
+    '''Top level function. Use this one instead of the underlying "parse_rst" etc.'''
 
     text = open(filename, 'r+', encoding='utf-8').read()
     snippets = None
     if filename.endswith('.rst') or filename.endswith('.rest'):
-        snippets = parse_rst(text, names)
+        snippets = parse_rst(text, names, extra_roles)
     else: # the default is markdown
         snippets = parse_markdown(text, names)
     if parse:
