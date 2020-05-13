@@ -7,7 +7,13 @@ Some intro text.
 
 <!-- name="second" -->
 ```
-ls -al
+echo "Tuttest is great" | wc -w
+```
+
+The result should be
+<!-- name="second-result" -->
+```
+3
 ```
 
 Then, you have to do xyz:
@@ -19,7 +25,7 @@ cd
 
 And finally something else.
 
-<!-- name="fourth"; comment="something" -->
+<!-- name="fifth"; comment="something" -->
 ```bash
 # see where ls is
 which ls
