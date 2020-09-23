@@ -1,5 +1,7 @@
 # tuttest
 
+Copyright (c) 2020 [Antmicro](https://www.antmicro.com)
+
 Tuttest is a utility package that simplifies tutorial and example testing.
 It provides an interface for extracting code snippets embedded in RST
 and Markdown files.
@@ -107,3 +109,7 @@ tuttest test.rst bash-tutorial | bash -
 ## TODOs:
 
  - [ ] Add support for testing links
+
+## License
+
+[Apache 2.0](LICENSE)
