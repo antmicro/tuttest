@@ -15,18 +15,18 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    code = [""]
+    code = []
     snippets = get_snippets(args.filename)
     if not args.commands:
         for s in snippets:
-            code.append(snippets[s].text)
+            code.append(snippets[s].text.strip())
     else:
         commands = args.commands.split(',')
 
         for c in commands:
             if c in snippets:
                 # name matches, add snippet code
-                code[-1] += "\n" + snippets[c].text.strip()
+                code.append(snippets[c].text.strip())
             else:
                 if c[0] == "+":
                     # no match, + sign, add ad hoc code to previous line; don't strip!
