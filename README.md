@@ -44,18 +44,15 @@ example contain the same code snippets. Therefore, the output produced by
 
 * `test.rst` (RST format):
 ```
-
 .. code-block:: bash
 
    echo "This is the first unnamed snippet"
-
 
 .. code-block:: bash
    :name: bash-tutorial
 
    echo "This is a named snippet"
    printf "1 + 2 = %d\n" $((1+2))
-
 
 .. code-block:: bash
 
@@ -85,28 +82,34 @@ echo "This is the second unnamed snippet"
 Here are ``tuttest`` usage examples. For clarity, these examples are run based on the above RST test document:
 
 * `tuttest test.rst`:
-  ```
-  echo "This is the first unnamed snippet"
-  echo "This is a named snippet"
-  printf "1 + 2 = %d\n" 1+2
-  echo "This is the second unnamed snippet"
-  ```
+<!-- name="test-wholefile" -->
+```
+echo "This is the first unnamed snippet"
+
+echo "This is a named snippet"
+printf "1 + 2 = %d\n" $((1+2))
+
+echo "This is the second unnamed snippet"
+```
 
 * `tuttest test.rst bash-tutorial`:
-  ```
-  echo "This is a named snippet"
-  printf "1 + 2 = %d\n" $((1+2))
-  ```
+<!-- name="test-named" -->
+```
+echo "This is a named snippet"
+printf "1 + 2 = %d\n" $((1+2))
+```
 
 * `tuttest test.rst unnamed2`:
-  ```
-  echo "This is the second unnamed snippet"
-  ```
+<!-- name="test-unnamed2" -->
+```
+echo "This is the second unnamed snippet"
+```
 
 * 'tuttest test.rst unnamed2 --prefix-lines-with "docker exec -t test bash -c"'
-  ```
-  docker exec -t test bash -c "echo "This is the second unnamed snippet";"
-  ```
+<!-- name="test-prefix" -->
+```
+docker exec -t test bash -c 'echo "This is the second unnamed snippet";'
+```
 
 A basic `tuttest` usage in the script might be the following:
 ```
