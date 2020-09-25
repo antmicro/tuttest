@@ -4,31 +4,49 @@ from tuttest import get_snippets
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 2:
-        print("A filename argument is required.")
-        sys.exit(1)
-    snippets = get_snippets(sys.argv[1])
-    if len(sys.argv) < 3:
-        for s in snippets:
-            print(snippets[s].text)
-        sys.exit(0)
-    commands = sys.argv[2].split(',')
+    import argparse
+
+    parser = argparse.ArgumentParser(description='A tutorial tester script. Extract the code blocks from tutorial and see if, when followed, the tutorial actually works.')
+
+    parser.add_argument('filename', metavar='filename', type=str, help='filename with tutorial')
+    parser.add_argument('commands', metavar='commands', nargs='?', type=str, help='optional names to give to the extracted snippets, provided as list')
+
+    parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
+
+    args = parser.parse_args()
 
     code = []
-    for c in commands:
-        if c in snippets:
-            # name matches, add snippet code
-            code.append(snippets[c].text.strip())
-        else:
-            if c[0] == "+":
-                # no match, + sign, add ad hoc code to previous line; don't strip!
-                code[len(code)-1] += c[1:]
-            elif c[0] == "#":
-                # select snippet by number
-                code.append(list(snippets.values())[int(c[1:])].text.strip())
-            else:
-                # no match, add ad hoc code as separate line
-                code.append(c.strip())
+    snippets = get_snippets(args.filename)
+    if not args.commands:
+        for s in snippets:
+            code.append(snippets[s].text.strip())
+    else:
+        commands = args.commands.split(',')
 
+        for c in commands:
+            if c in snippets:
+                # name matches, add snippet code
+                code.append(snippets[c].text.strip())
+            else:
+                if c[0] == "+":
+                    # no match, + sign, add ad hoc code to previous line; don't strip!
+                    code[len(code)-1] += c[1:]
+                elif c[0] == "#":
+                    # select snippet by number
+                    code.append(list(snippets.values())[int(c[1:])].text.strip())
+                else:
+                    # no match, add ad hoc code as separate line
+                    code.append(c.strip())
+
+    if args.prefix_lines_with:
+        prefixed_code = []
+        for snippet in code:
+            prefixed_snippet = args.prefix_lines_with + " \'"
+            for line in snippet.splitlines():
+                if len(line.strip()): # skip empty lines
+                    prefixed_snippet += line + ";"
+            prefixed_snippet += "\'"
+            prefixed_code.append(prefixed_snippet)
+        code = prefixed_code
     print('\n\n'.join(code))
 
