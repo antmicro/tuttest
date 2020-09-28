@@ -24,7 +24,7 @@ the console. This option might be useful for checking tutorials from,
 i.e., a Travis CI script. Here is a synopsis of a direct `tuttest` call:
 
 ```
-  tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>]
+  tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-command]
 ```
 
   * `<file_name>` is a file in Markdown or RST from which you want
@@ -32,8 +32,11 @@ i.e., a Travis CI script. Here is a synopsis of a direct `tuttest` call:
   * `<snippet_name>` is the name that you provided for the snippet. Note that
     if you do not name a snippet, it will receive the `unnamedX` name, where
     `X` is the snippet number in the file (starting from 0). Examples of named
-    snippets can be found below.
-  * `<prefix>` is a command that is added to the snippet as a prefix
+    snippets can be found below. You can execute multiple snippets at once, by
+    separating their names with `,`.
+  * `<prefix>` is a command that is added to the snippet as a prefix.
+  * `--single-command` if provided, all snippets from `<snippet_name>` (if specified) will be
+    executed as a single command, separated with `;`.
 
 ### Examples
 
@@ -81,7 +84,7 @@ echo "This is the second unnamed snippet"
 
 Here are ``tuttest`` usage examples. For clarity, these examples are run based on the above RST test document:
 
-* `tuttest test.rst`:
+* `tuttest test/test.rst`:
 <!-- name="test-wholefile" -->
 ```
 echo "This is the first unnamed snippet"
@@ -92,23 +95,29 @@ printf "1 + 2 = %d\n" $((1+2))
 echo "This is the second unnamed snippet"
 ```
 
-* `tuttest test.rst bash-tutorial`:
+* `tuttest test/test.rst bash-tutorial`:
 <!-- name="test-named" -->
 ```
 echo "This is a named snippet"
 printf "1 + 2 = %d\n" $((1+2))
 ```
 
-* `tuttest test.rst unnamed2`:
+* `tuttest test/test.rst unnamed2`:
 <!-- name="test-unnamed2" -->
 ```
 echo "This is the second unnamed snippet"
 ```
 
-* 'tuttest test.rst unnamed2 --prefix-lines-with "docker exec -t test bash -c"'
+* `tuttest test/test.rst unnamed2 --prefix-lines-with "docker exec -t test bash -c"`
 <!-- name="test-prefix" -->
 ```
 docker exec -t test bash -c 'echo "This is the second unnamed snippet";'
+```
+
+* `tuttest test/test.rst bash-tutorial,unnamed2 --prefix-lines-with "docker exec -t test bash -c" --single-command`
+<!-- name="single-command" -->
+```
+docker exec -t test bash -c 'echo "This is a named snippet";printf "1 + 2 = %d\n" $((1+2));echo "This is the second unnamed snippet";'
 ```
 
 A basic `tuttest` usage in the script might be the following:
