@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser.add_argument('commands', metavar='commands', nargs='?', type=str, help='optional names to give to the extracted snippets, provided as list')
 
     parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
+    parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
 
     args = parser.parse_args()
 
@@ -37,6 +38,9 @@ if __name__ == "__main__":
                 else:
                     # no match, add ad hoc code as separate line
                     code.append(c.strip())
+
+    if args.single_command:
+        code = [';'.join(code)]
 
     if args.prefix_lines_with:
         prefixed_code = []
