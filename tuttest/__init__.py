@@ -130,3 +130,24 @@ def parse_snippet(snippet: str) -> List[Command]:
     for i in range(1,len(spl),3):
         commands.append(Command(spl[i].strip(), spl[i+1], spl[i+2]))
     return commands
+
+def autoexec(snippet: Snippet, printer, executor, expector):
+    if 'name' in snippet.meta:
+        name = snippet.meta['name']
+        printer(f"Executing snippet '{name}'")
+    else:
+        printer(f"Executing unnamed snippet")
+    # inject empty command to make sure we have the right prompt
+    executor('');
+    for c in snippet.commands:
+        if c.prompt:
+            printer(f"  {c.prompt}")
+            assert expector(c.prompt).match is not None
+        if c.command:
+            printer(f"  >>> {c.command}")
+            executor(c.command)
+            assert expector(c.command).match is not None
+        if c.result:
+            for line in c.result.strip().split('\n'):
+                printer(f"  {line}")
+            assert expector(c.result).match is not None
