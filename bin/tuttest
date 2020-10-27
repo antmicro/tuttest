@@ -3,18 +3,16 @@
 from tuttest import get_snippets
 import fire
 
-def tuttest(filename, commands = None, single_command = None, prefix_lines_with = None):
+def tuttest(filename: str, commands: str = None, single_command: bool = None, prefix_lines_with: str = None):
     '''
-      Tuttest is a utility package that simplifies tutorial and example testing. It provides an interface for extracting code snippets embedded in RST and Markdown files.
-      Args:
-        filename : string
-          filename with tutorial
-        commands : string
-          optional names to give to the extracted snippets, provided as list
-        single_command : boolean
-          executes all snippets in single command
-        prefix_lines_with : string
-          string to prefix each command with
+    Tuttest is a utility package that simplifies tutorial and example testing. It provides an interface for extracting code snippets embedded in RST and Markdown files.
+
+    Args:
+        filename : filename with tutorial
+        commands : optional names to give to the extracted snippets,
+                   provided as list
+        single_command : executes all snippets in a single command
+        prefix_lines_with : string to prefix each command with
     '''
     snippets = get_snippets(filename)
 
@@ -55,9 +53,6 @@ def tuttest(filename, commands = None, single_command = None, prefix_lines_with 
         code = prefixed_code
     print('\n\n'.join(code))
 
-
 if __name__ == "__main__":
-    import sys
-
     fire.Fire(tuttest)
 
