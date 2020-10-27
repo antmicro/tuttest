@@ -7,7 +7,7 @@ setup(name='tuttest',
       author='Antmicro',
       author_email='mgielda@antmicro.com',
       install_requires=[
-          'docutils', 'pygments'
+          'docutils', 'pygments', 'fire'
       ],
       license='MIT',
       scripts=['bin/tuttest'],
