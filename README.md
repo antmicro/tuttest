@@ -23,7 +23,7 @@ The `names` argument helps in the Pythonic use of `tuttest` - whenever you can't
 
 ```
 names = ['first_name', 'some_other_name', 'and_yet_another'] 
-s = get_snippets('path/to/file.rst', names=names, extra_roles=extra_roles, parse=True)
+s = get_snippets('path/to/file.rst', names=names)
 print(s['first_name'])
 # prints the snippet text of the first snippet found in the file
 ```
