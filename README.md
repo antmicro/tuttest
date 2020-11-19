@@ -17,6 +17,19 @@ and Markdown files.
 
 * `parse_snippet` - parse the snippet into a (prompt, command, result) sequence list. Useful for autoexecuting of docs.
 
+### Naming snippets externally
+
+The `names` argument helps in the Pythonic use of `tuttest` - whenever you can't or don't want to change the documentation you want to test by naming snippets inside the docs, but you still want to keep some structure, you might want to sue this feature to name snippets extracted from a doc. An example below:
+
+```
+names = ['first_name', 'some_other_name', 'and_yet_another'] 
+s = get_snippets('path/to/file.rst', names=names, extra_roles=extra_roles, parse=True)
+print(s['first_name'])
+# prints the snippet text of the first snippet found in the file
+```
+
+Of course this way you will rely on the order of the snippets, but perhaps this is not a bad thing.
+
 ## Getting Started
 
 You can call `tuttest` directly by invoking the `tuttest` command from
