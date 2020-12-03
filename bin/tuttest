@@ -36,8 +36,8 @@ if __name__ == "__main__":
                     # select snippet by number
                     code.append(list(snippets.values())[int(c[1:])].text.strip())
                 else:
-                    # no match, add ad hoc code as separate line
-                    code.append(c.strip())
+                    # no match, exit with error code
+                    exit(1)
 
     if args.single_command:
         code = [';'.join(code)]
