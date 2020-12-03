@@ -19,6 +19,10 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
     directives.register_directive('tabs', Compound)
     directives.register_directive('group-tab', Compound)
 
+    # Sphinx jinja extension directives
+    from docutils.parsers.rst.directives.body import LineBlock
+    directives.register_directive('jinja', LineBlock)
+
     # custom roles e.g. extlinks
     for role in extra_roles:
         roles.register_generic_role(role, nodes.emphasis)
