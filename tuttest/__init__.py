@@ -21,7 +21,9 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
 
     # Sphinx jinja extension directives
     from docutils.parsers.rst.directives.body import LineBlock
-    directives.register_directive('jinja', LineBlock)
+    jinja = LineBlock
+    jinja.option_spec = {'file': str}
+    directives.register_directive('jinja', jinja)
 
     # custom roles e.g. extlinks
     for role in extra_roles:
