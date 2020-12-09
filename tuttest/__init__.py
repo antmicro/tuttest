@@ -1,26 +1,28 @@
-from collections import OrderedDict
-from typing import Optional, List, Dict
 import re
+
+from typing import List, Dict
+from collections import OrderedDict
+from docutils import nodes
+from docutils.core import publish_doctree
+from docutils.parsers.rst import roles, directives
+from docutils.parsers.rst.directives.body import LineBlock
+
+from .sphinx_tabs import Tabs, GroupTab
+
 
 def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -> OrderedDict:
 
     snippets = OrderedDict()
-    from docutils.core import publish_doctree
 
     # Sphinx roles
-    from docutils.parsers.rst import roles
-    from docutils import nodes
     roles.register_generic_role('kbd', nodes.emphasis)
     roles.register_generic_role('ref', nodes.emphasis)
 
     # Sphinx-tabs extension directives
-    from docutils.parsers.rst import directives
-    from docutils.parsers.rst.directives.body import Compound
-    directives.register_directive('tabs', Compound)
-    directives.register_directive('group-tab', Compound)
+    directives.register_directive('tabs', Tabs)
+    directives.register_directive('group-tab', GroupTab)
 
     # Sphinx jinja extension directives
-    from docutils.parsers.rst.directives.body import LineBlock
     jinja = LineBlock
     jinja.option_spec = {'file': str}
     directives.register_directive('jinja', jinja)
