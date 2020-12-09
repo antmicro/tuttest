@@ -1,28 +1,27 @@
 #!/usr/bin/env python3
 
 from tuttest import get_snippets
+import fire
 
-if __name__ == "__main__":
-    import sys
-    import argparse
+def tuttest(filename: str, commands: str = None, single_command: bool = None, prefix_lines_with: str = None):
+    '''
+    Tuttest is a utility package that simplifies tutorial and example testing. It provides an interface for extracting code snippets embedded in RST and Markdown files.
 
-    parser = argparse.ArgumentParser(description='A tutorial tester script. Extract the code blocks from tutorial and see if, when followed, the tutorial actually works.')
-
-    parser.add_argument('filename', metavar='filename', type=str, help='filename with tutorial')
-    parser.add_argument('commands', metavar='commands', nargs='?', type=str, help='optional names to give to the extracted snippets, provided as list')
-
-    parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
-    parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
-
-    args = parser.parse_args()
+    Args:
+        filename : filename with tutorial
+        commands : optional names to give to the extracted snippets,
+                   provided as list
+        single_command : executes all snippets in a single command
+        prefix_lines_with : string to prefix each command with
+    '''
+    snippets = get_snippets(filename)
 
     code = []
-    snippets = get_snippets(args.filename)
-    if not args.commands:
+    if not commands:
         for s in snippets:
             code.append(snippets[s].text.strip())
     else:
-        commands = args.commands.split(',')
+        commands = commands.split(',')
 
         for c in commands:
             if c in snippets:
@@ -39,13 +38,13 @@ if __name__ == "__main__":
                     # no match, exit with error code
                     exit(1)
 
-    if args.single_command:
+    if single_command:
         code = [';'.join(code)]
 
-    if args.prefix_lines_with:
+    if prefix_lines_with:
         prefixed_code = []
         for snippet in code:
-            prefixed_snippet = args.prefix_lines_with + " \'"
+            prefixed_snippet = prefix_lines_with + " \'"
             for line in snippet.splitlines():
                 if len(line.strip()): # skip empty lines
                     prefixed_snippet += line + ";"
@@ -53,4 +52,7 @@ if __name__ == "__main__":
             prefixed_code.append(prefixed_snippet)
         code = prefixed_code
     print('\n\n'.join(code))
+
+if __name__ == "__main__":
+    fire.Fire(tuttest)
 
