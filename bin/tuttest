@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from tuttest import get_snippets
+import fnmatch
 
 if __name__ == "__main__":
     import sys
@@ -23,8 +24,11 @@ if __name__ == "__main__":
             code.append(snippets[s].text.strip())
     else:
         commands = args.commands.split(',')
-
+        commands_filter = []
         for c in commands:
+            commands_filter.extend(fnmatch.filter(snippets, c))
+
+        for c in commands_filter:
             if c in snippets:
                 # name matches, add snippet code
                 code.append(snippets[c].text.strip())
