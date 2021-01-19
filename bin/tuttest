@@ -3,14 +3,24 @@
 from tuttest import get_snippets
 import fnmatch
 
+def snipdef(arg):
+    # TODO add http/https capability
+    # TODO take into account the "+" functionality
+    filename = ''
+    snippetlist = []
+    split = arg.split(':')
+    filename = split[0]
+    if len(split) > 1:
+        snippetlist = split[1].split(',')
+    return {'filename': filename, "snippetlist": snippetlist}
+
 if __name__ == "__main__":
     import sys
     import argparse
 
     parser = argparse.ArgumentParser(description='A tutorial tester script. Extract the code blocks from tutorial and see if, when followed, the tutorial actually works.')
 
-    parser.add_argument('filename', metavar='filename', type=str, help='filename with tutorial')
-    parser.add_argument('commands', metavar='commands', nargs='?', type=str, help='optional comma-separated list of names of snippets to extract if you want a subset')
+    parser.add_argument('snipdefs', metavar='snipdefs', type=snipdef, nargs="+", help='Filename and snippet list, in the form of <filename:snippet1,snippet2> etc. Skip the snippet list to extract all snippets')
 
     parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
     parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
@@ -18,30 +28,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     code = []
-    snippets = get_snippets(args.filename)
-    if not args.commands:
-        for s in snippets:
-            code.append(snippets[s].text.strip())
-    else:
-        commands = args.commands.split(',')
-        commands_filter = []
-        for c in commands:
-            commands_filter.extend(fnmatch.filter(snippets, c))
+    for snipdef in args.snipdefs:
+        snippets = get_snippets(snipdef['filename'])
+        if not snipdef['snippetlist']:
+            for s in snippets:
+                code.append(snippets[s].text.strip())
+        else:
+            commands = snipdef['snippetlist']
+            commands_filter = []
+            for c in commands:
+                commands_filter.extend(fnmatch.filter(snippets, c))
 
-        for c in commands_filter:
-            if c in snippets:
-                # name matches, add snippet code
-                code.append(snippets[c].text.strip())
-            else:
-                if c[0] == "+":
-                    # no match, + sign, add ad hoc code to previous line; don't strip!
-                    code[len(code)-1] += c[1:]
-                elif c[0] == "#":
-                    # select snippet by number
-                    code.append(list(snippets.values())[int(c[1:])].text.strip())
+            for c in commands_filter:
+                if c in snippets:
+                    # name matches, add snippet code
+                    code.append(snippets[c].text.strip())
                 else:
-                    # no match, exit with error code
-                    exit(1)
+                    if c[0] == "+":
+                        # no match, + sign, add ad hoc code to previous line; don't strip!
+                        code[len(code)-1] += c[1:]
+                    elif c[0] == "#":
+                        # select snippet by number
+                        code.append(list(snippets.values())[int(c[1:])].text.strip())
+                    else:
+                        # no match, exit with error code
+                        exit(1)
 
     if args.single_command:
         code = [';'.join(code)]
