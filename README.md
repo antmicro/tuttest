@@ -59,39 +59,39 @@ example contain the same code snippets. Therefore, the output produced by
 `tuttest` will be the same for both cases.
 
 * `test.rst` (RST format):
-```
-.. code-block:: bash
-
-   echo "This is the first unnamed snippet"
-
-.. code-block:: bash
-   :name: bash-tutorial
-
-   echo "This is a named snippet"
-   printf "1 + 2 = %d\n" $((1+2))
-
-.. code-block:: bash
-
-   echo "This is the second unnamed snippet"
-```
+  ```
+  .. code-block:: bash
+  
+     echo "This is the first unnamed snippet"
+  
+  .. code-block:: bash
+     :name: bash-tutorial
+  
+     echo "This is a named snippet"
+     printf "1 + 2 = %d\n" $((1+2))
+  
+  .. code-block:: bash
+  
+     echo "This is the second unnamed snippet"
+  ```
 
 * `test.md` (Markdown format*)
 
-```
-` ``
-echo "This is the first unnamed snippet"
-` ``
-
-<!-- name="bash-tutorial" -->
-` ``
-echo "This is a named snippet"
-printf "1 + 2 = %d\n" $((1+2))
-` ``
-
-` ``
-echo "This is the second unnamed snippet"
-` ``
-```
+  ```
+  ` ``
+  echo "This is the first unnamed snippet"
+  ` ``
+  
+  <!-- name="bash-tutorial" -->
+  ` ``
+  echo "This is a named snippet"
+  printf "1 + 2 = %d\n" $((1+2))
+  ` ``
+  
+  ` ``
+  echo "This is the second unnamed snippet"
+  ` ``
+  ```
   \* Note that you have to change the ``` ` `` ``` used in the script to
   `` ``` `` before the first script usage.
 
