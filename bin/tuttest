@@ -36,8 +36,12 @@ if __name__ == "__main__":
         else:
             commands = snipdef['snippetlist']
             commands_filter = []
-            for c in commands:
-                commands_filter.extend(fnmatch.filter(snippets, c))
+            for c in commands: # match wildcards
+                wildcard = fnmatch.filter(snippets, c)
+                if len(wildcard) > 0:
+                    commands_filter.extend(wildcard)
+                else:
+                    commands_filter.append(c)
 
             for c in commands_filter:
                 if c in snippets:
@@ -47,9 +51,9 @@ if __name__ == "__main__":
                     if c[0] == "+":
                         # no match, + sign, add ad hoc code to previous line; don't strip!
                         code[len(code)-1] += c[1:]
-                    elif c[0] == "#":
+                    elif c.isdigit():
                         # select snippet by number
-                        code.append(list(snippets.values())[int(c[1:])].text.strip())
+                        code.append(list(snippets.values())[int(c)].text.strip())
                     else:
                         # no match, exit with error code
                         exit(1)
