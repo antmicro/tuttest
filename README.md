@@ -58,7 +58,7 @@ code snippets from files. Both the Markdown and RST files used in this
 example contain the same code snippets. Therefore, the output produced by
 `tuttest` will be the same for both cases.
 
-* `test.rst` (RST format):
+* `test.rst` (reStructuredText):
 
 ```
 .. code-block:: bash
@@ -76,7 +76,7 @@ example contain the same code snippets. Therefore, the output produced by
    echo "This is the second unnamed snippet"
 ```
 
-* `test.md` (Markdown format*)
+* `test.md` (Markdown)
 
 ````
 ```
