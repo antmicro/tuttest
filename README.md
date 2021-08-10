@@ -37,7 +37,7 @@ the console. This option might be useful for checking tutorials from,
 i.e., a Travis CI script. Here is a synopsis of a direct `tuttest` call:
 
 ```
-  tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-command]
+tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-command]
 ```
 
   * `<file_name>` is a file in Markdown or RST from which you want
@@ -59,43 +59,43 @@ example contain the same code snippets. Therefore, the output produced by
 `tuttest` will be the same for both cases.
 
 * `test.rst` (RST format):
-  ```
-  .. code-block:: bash
+
+```
+.. code-block:: bash
+
+   echo "This is the first unnamed snippet"
   
-     echo "This is the first unnamed snippet"
-  
-  .. code-block:: bash
-     :name: bash-tutorial
-  
-     echo "This is a named snippet"
-     printf "1 + 2 = %d\n" $((1+2))
-  
-  .. code-block:: bash
-  
-     echo "This is the second unnamed snippet"
-  ```
+.. code-block:: bash
+   :name: bash-tutorial
+
+   echo "This is a named snippet"
+   printf "1 + 2 = %d\n" $((1+2))
+
+.. code-block:: bash
+
+   echo "This is the second unnamed snippet"
+```
 
 * `test.md` (Markdown format*)
 
-  ```
-  ` ``
-  echo "This is the first unnamed snippet"
-  ` ``
-  
-  <!-- name="bash-tutorial" -->
-  ` ``
-  echo "This is a named snippet"
-  printf "1 + 2 = %d\n" $((1+2))
-  ` ``
-  
-  ` ``
-  echo "This is the second unnamed snippet"
-  ` ``
-  ```
-  \* Note that you have to change the ``` ` `` ``` used in the script to
-  `` ``` `` before the first script usage.
+````
+```
+echo "This is the first unnamed snippet"
+```
 
-Here are ``tuttest`` usage examples. For clarity, these examples are run based on the above RST test document:
+<!-- name="bash-tutorial" -->
+```
+echo "This is a named snippet"
+printf "1 + 2 = %d\n" $((1+2))
+```
+
+```
+echo "This is the second unnamed snippet"
+```
+````
+
+Here are some `tuttest` usage examples.
+For clarity, these examples are run based on the above RST test document:
 
 * `tuttest test/test.rst`:
 <!-- name="test-wholefile" -->
