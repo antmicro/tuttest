@@ -1,12 +1,33 @@
 # tuttest
 
-Copyright (c) 2020-2021 [Antmicro](https://www.antmicro.com)
+Copyright (c) 2020-2022 [Antmicro](https://www.antmicro.com)
 
-Tuttest is a utility package that simplifies tutorial and example testing.
-It provides an interface for extracting code snippets embedded in RST
-and Markdown files.
+Tuttest is simple utility which simplifies tutorial and example testing and encourages code reuse.
+It provides an interface for extracting code snippets (code blocks) embedded in RST and Markdown files.
 
-## Features
+## CLI usage
+
+You can call `tuttest` directly by invoking the `tuttest` command from the console.
+This option might be useful for checking tutorials from i.e. a GitHub Actions script.
+Here is what a direct `tuttest` call looks like:
+
+```
+tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-command]
+```
+
+* `<file_name>`: file in Markdown or RST from which you want to extract the code snippets.
+* `[<snippet_name>]`: if absent, extract all the snippets. If present, this is the name of the snippet
+  (or snippets, with names separated by `,`) that you want to extract.
+  Note that unnamed snippets can still be referred to as `unnamedX`, where `X`
+  is the snippet's order in the file (starting from 0). See examples below.
+
+### Optional flags
+
+* `--prefix-lines-with`: add whatever command you provide as `<prefix>` at the beginning of the snippet
+* `--single-command`: if provided, all snippets from `<snippet_name>` (if specified) will be
+  packed into a one-liner, separated with `;`.
+
+## Programmatic use
 
 * `get_snippets` - function to extract snippets from a file. Calls `parse_rst` or `parse_markdown` underneath. Args:
 
@@ -30,33 +51,11 @@ print(s['first_name'])
 
 Of course this way you will rely on the order of the snippets, but perhaps this is not a bad thing.
 
-## Getting Started
+## Examples
 
-You can call `tuttest` directly by invoking the `tuttest` command from
-the console. This option might be useful for checking tutorials from,
-i.e., a Travis CI script. Here is a synopsis of a direct `tuttest` call:
-
-```
-tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-command]
-```
-
-  * `<file_name>` is a file in Markdown or RST from which you want
-    to extract the code snippets.
-  * `<snippet_name>` is the name that you provided for the snippet. Note that
-    if you do not name a snippet, it will receive the `unnamedX` name, where
-    `X` is the snippet number in the file (starting from 0). Examples of named
-    snippets can be found below. You can execute multiple snippets at once, by
-    separating their names with `,`.
-  * `<prefix>` is a command that is added to the snippet as a prefix.
-  * `--single-command` if provided, all snippets from `<snippet_name>` (if specified) will be
-    executed as a single command, separated with `;`.
-
-### Examples
-
-This example presents how to use `tuttest` for extracting named and unnamed
-code snippets from files. Both the Markdown and RST files used in this
-example contain the same code snippets. Therefore, the output produced by
-`tuttest` will be the same for both cases.
+This example presents how to use `tuttest` for extracting named and unnamed code snippets from files.
+Both the Markdown and RST files used in this example contain the same code snippets.
+Therefore, the output produced by `tuttest` should be the same for both cases.
 
 * `test.rst` (reStructuredText):
 
@@ -133,8 +132,10 @@ docker exec -t test bash -c 'echo "This is the second unnamed snippet";'
 docker exec -t test bash -c 'echo "This is a named snippet";printf "1 + 2 = %d\n" $((1+2));echo "This is the second unnamed snippet";'
 ```
 
-A basic `tuttest` usage in the script might be the following:
+By default, `tuttest` extracts the snippets but does not execute them.
+To actually execute a snippet, you can e.g. pipe the results to bash like:
 ```
+# this executes the snippet called bash-tutorial from test.rst in bash
 tuttest test.rst bash-tutorial | bash -
 ```
 
