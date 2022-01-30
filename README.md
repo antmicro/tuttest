@@ -2,7 +2,7 @@
 
 Copyright (c) 2020-2022 [Antmicro](https://www.antmicro.com)
 
-Tuttest is simple utility which simplifies tutorial and example testing and encourages code reuse.
+Tuttest is a simple utility which lets you easily test tutorials and examples and reuse code between e.g. READMEs and other parts of the project.
 It provides an interface for extracting code snippets (code blocks) embedded in RST and Markdown files.
 
 ## CLI usage
