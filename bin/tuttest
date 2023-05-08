@@ -14,11 +14,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
     parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
+    parser.add_argument('--language', type=str, metavar='lang', help='selects all snippets for a given language')
 
     args = parser.parse_args()
 
     code = []
     snippets = get_snippets(args.filename)
+    if args.language:
+        snippets = {name: snippet for name, snippet in snippets.items() if snippet.lang == args.language}
     if not args.commands:
         for s in snippets:
             code.append(snippets[s].text.strip())
