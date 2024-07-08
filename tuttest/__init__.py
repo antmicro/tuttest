@@ -55,6 +55,15 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
                 name = 'unnamed'+str(idx)
             snippets[name] = snippet
 
+        end = block.line + len(block.astext().strip().splitlines())
+        snippet.pos = (block.line, end - 1)
+
+        next_node = next(block.findall(include_self=False, descend=False, siblings=True), None)
+        if next_node is not None and next_node.tagname == 'comment':
+            text = next_node.astext()
+            if text.strip().startswith('meta:'):
+                snippet.meta.update(parse_meta(text.lstrip('meta:')))
+
     return snippets
 
 def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
@@ -70,7 +79,7 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
     prevl = None
     snippet_lines = []
 
-    for l in lines:
+    for i, l in enumerate(lines):
         if l[0:3] == "```":
             if inside:
                 # we've found the end of the previous snippet
@@ -79,12 +88,14 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
                     snippets[snippet.meta['name']] = snippet
                 else:
                     snippets['unnamed'+str(len(snippets))] = snippet
+                snippet.pos = (block_line, i + 1)
                 inside = False
             else:
                 # we're starting to parse a new snippet
                 inside = True
                 snippet = Snippet()
                 snippet_lines = []
+                block_line = i + 1
                 lang = l[3:].strip()
                 if lang != "":
                     snippet.lang = lang
@@ -92,11 +103,8 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
                 if prevl is not None:
                     prevl = prevl.strip()
                     if prevl[0:4] == "<!--" and prevl[-3:] == "-->" :
-                        prevl = prevl[4:-4]
-                        variables = prevl.split(';')
-                        for v in variables:
-                            split = v.split('=',1)
-                            snippet.meta[split[0].strip()] = split[1].strip().strip('"')
+                        meta = parse_meta(prevl[4:-4])
+                        snippet.meta.update(meta)
         else:
             # store current line into the line buffer
             if inside:
@@ -104,6 +112,22 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
         # store previous line to be able to look for metadata
         prevl = l
     return snippets
+
+def parse_meta(line: str) -> Dict[str, str]:
+    meta = dict()
+    prev = None
+    variables = line.split(';')
+    for v in variables:
+        split = v.split('=', 1)
+        if len(split) == 1:
+            meta[prev] += ';{}'.format(v.rstrip().rstrip('"'))
+            continue
+
+        key = split[0].strip()
+        meta[key] = split[1].strip().strip('"')
+        prev = key
+    return meta
+
 
 def get_snippets(filename: str, *, names: List[str] = None, extra_roles: List[str] = [], parse: bool = False) -> OrderedDict:
     '''Top level function. Use this one instead of the underlying "parse_rst" etc.'''
@@ -133,6 +157,7 @@ class Snippet:
     lang: str = ''
     meta: Dict = field(default_factory=dict)
     commands: List[Command] = field(default_factory=list)
+    pos: (int, int) = (0, 0)
 
 # currently only parse Renode snippets
 def parse_snippet(snippet: str) -> List[Command]:
