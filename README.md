@@ -51,6 +51,36 @@ print(s['first_name'])
 
 Of course this way you will rely on the order of the snippets, but perhaps this is not a bad thing.
 
+### Additional metadata
+
+Besides snippet names, you can also pass your own, custom metadata, which will be extracted by `get_snippets`.
+Each value should be separated by `;`.
+You can use this when trying to implement more complicated logic, for example
+given snippets targeting a specific platform:
+````
+<!-- name="os-info"; target="linux" -->
+```
+cat /etc/os-release
+```
+
+<!-- name="os-info2"; target="windows" -->
+```
+ver
+```
+````
+
+you can run only snippets for your current platform:
+```
+import sys
+
+snippets = get_snippets('path/to/file.md')
+
+for snippet in snippets.values():
+  if snippet.meta.get('target') == sys.name:
+    run_snippet(snippet)
+    ...
+```
+
 ## Examples
 
 This example presents how to use `tuttest` for extracting named and unnamed code snippets from files.
