@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
     parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
     parser.add_argument('--language', type=str, metavar='lang', help='selects all snippets for a given language')
+    parser.add_argument('--enable-transformers', action='store_true', help='enables execution of snippet transformers')
 
     args = parser.parse_args()
 
@@ -26,6 +27,14 @@ if __name__ == "__main__":
             for name, snippet in snippets.items()
             if snippet.lang == args.language
         }
+
+    if args.enable_transformers:
+        transformed = {
+            name: transform_snippet(snippet, snippet.meta["transformer"])
+            for name, snippet, in snippets.items()
+            if snippet.meta.get("transformer") is not None
+        }
+        snippets.update(transformed)
 
     if not args.commands:
         for s in snippets:

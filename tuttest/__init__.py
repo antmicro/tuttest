@@ -1,7 +1,10 @@
 import re
 import subprocess
+import sys
 from collections import OrderedDict
 from dataclasses import dataclass, field
+from os import environ
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
@@ -18,7 +21,8 @@ class Snippet:
     lang: str = ''
     meta: Dict = field(default_factory=dict)
     commands: List[Command] = field(default_factory=list)
-    pos: Tuple[int, int] = (0, 0)
+    file: str = ''
+    pos: Optional[Tuple[int, int]] = None
 
 
 def parse_rst(
@@ -27,6 +31,7 @@ def parse_rst(
     snippets = OrderedDict()
     from docutils import nodes
     from docutils.core import publish_doctree
+
     # Sphinx roles
     from docutils.parsers.rst import roles
 
@@ -80,8 +85,9 @@ def parse_rst(
                 name = 'unnamed' + str(idx)
             snippets[name] = snippet
 
-        end = block.line + len(block.astext().strip().splitlines())
-        snippet.pos = (block.line, end - 1)
+        if block.line:
+            end = block.line + len(block.astext().strip().splitlines())
+            snippet.pos = (block.line, end - 1)
 
         next_node = next(
             block.findall(include_self=False, descend=False, siblings=True), None
@@ -94,7 +100,9 @@ def parse_rst(
     return snippets
 
 
-def parse_markdown(text: str, names: Optional[List[str]] = None) -> OrderedDict[str, Snippet]:
+def parse_markdown(
+    text: str, names: Optional[List[str]] = None
+) -> OrderedDict[str, Snippet]:
     snippets = OrderedDict()
     lines = text.split('\n')
 
@@ -175,9 +183,53 @@ def get_snippets(
     if parse:
         for s in snippets.values():
             s.commands = parse_snippet(s.text)
+    for s in snippets.values():
+        s.file = filename
+
     return snippets
 
 
+def transform_snippet(
+    snippet: Snippet, transformer_cmd: Optional[str | List[str]] = None
+) -> Snippet:
+    '''Runs the transformer command in a subprocess on a given `Snippet`.'''
+    origin = Path(snippet.file)
+
+    env = {
+        'TUTTEST_INPUT': snippet.text,
+        'TUTTEST_FILE': origin.name,
+        'TUTTEST_DIR': origin.absolute().parent,
+        'TUTTEST_SNIPPET': snippet.meta.get('name'),
+        **environ,
+    }
+
+    if transformer_cmd is None:
+        if snippet.meta.get("transformer") is None:
+            return snippet
+
+        transformer_cmd = str(snippet.meta["transformer"])
+
+    print(snippet.text)
+    result = subprocess.run(
+        transformer_cmd,
+        input=snippet.text + '\n',
+        cwd=Path(snippet.file).absolute().parent,
+        env=env,
+        shell=True,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=sys.stdout,
+    )
+
+    return Snippet(
+        result.stdout,
+        snippet.lang,
+        snippet.meta,
+        snippet.commands,
+        snippet.file,
+        snippet.pos,
+    )
 
 
 # currently only parse Renode snippets
