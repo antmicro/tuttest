@@ -151,17 +151,34 @@ def parse_markdown(
 
 def parse_meta(line: str) -> Dict[str, str]:
     meta = dict()
-    prev = None
-    variables = line.split(';')
-    for v in variables:
-        split = v.split('=', 1)
-        if len(split) == 1:
-            meta[prev] += ';{}'.format(v.rstrip().rstrip('"'))
-            continue
+    input = line.lstrip()
+    while len(input) > 0:
+        key, sep, input = input.partition("=")
+        assert len(sep) > 0, f"Unexpected text '{key}' (meta var not found)"
+        assert len(key) > 0, f"Empty meta key in '{input}'"
 
-        key = split[0].strip()
-        meta[key] = split[1].strip().strip('"')
-        prev = key
+        quote, input = input[0], input[1:]
+        assert (
+            quote == "'" or quote == '"'
+        ), f"Unquoted value for variable '{key}' (expected either `'` or `\"`)"
+
+        val = ""
+        while len(input) > 0:
+            cmd, _, input = input.partition(";")
+            if cmd.rstrip()[-1] == quote:
+                val += cmd.rstrip()[:-1]
+                break
+
+            val += f"{cmd};"
+        else:
+            raise AssertionError(
+                f"Unterminated meta var '{key}' (closing `{quote}` not found)"
+            )
+
+        meta[key] = val
+
+        input = input.lstrip()
+
     return meta
 
 
@@ -209,7 +226,6 @@ def transform_snippet(
 
         transformer_cmd = str(snippet.meta["transformer"])
 
-    print(snippet.text)
     result = subprocess.run(
         transformer_cmd,
         input=snippet.text + '\n',
