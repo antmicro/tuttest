@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-from tuttest import get_snippets
 import fnmatch
 
+from tuttest import get_snippets, transform_snippet
+
 if __name__ == "__main__":
-    import sys
     import argparse
 
     parser = argparse.ArgumentParser(description='A tutorial tester script. Extract the code blocks from tutorial and see if, when followed, the tutorial actually works.')
@@ -15,13 +15,27 @@ if __name__ == "__main__":
     parser.add_argument('--prefix-lines-with', metavar='prefix', type=str, help='string to prefix each command with')
     parser.add_argument('--single-command', action='store_true', help='executes all snippets in single command')
     parser.add_argument('--language', type=str, metavar='lang', help='selects all snippets for a given language')
+    parser.add_argument('--enable-transformers', action='store_true', help='enables execution of snippet transformers')
 
     args = parser.parse_args()
 
     code = []
     snippets = get_snippets(args.filename)
     if args.language:
-        snippets = {name: snippet for name, snippet in snippets.items() if snippet.lang == args.language}
+        snippets = {
+            name: snippet
+            for name, snippet in snippets.items()
+            if snippet.lang == args.language
+        }
+
+    if args.enable_transformers:
+        transformed = {
+            name: transform_snippet(snippet, snippet.meta["transformer"])
+            for name, snippet, in snippets.items()
+            if snippet.meta.get("transformer") is not None
+        }
+        snippets.update(transformed)
+
     if not args.commands:
         for s in snippets:
             code.append(snippets[s].text.strip())
@@ -38,7 +52,7 @@ if __name__ == "__main__":
             else:
                 if c[0] == "+":
                     # no match, + sign, add ad hoc code to previous line; don't strip!
-                    code[len(code)-1] += c[1:]
+                    code[len(code) - 1] += c[1:]
                 elif c[0] == "#":
                     # select snippet by number
                     code.append(list(snippets.values())[int(c[1:])].text.strip())
@@ -54,10 +68,9 @@ if __name__ == "__main__":
         for snippet in code:
             prefixed_snippet = args.prefix_lines_with + " \'"
             for line in snippet.splitlines():
-                if len(line.strip()): # skip empty lines
+                if len(line.strip()):  # skip empty lines
                     prefixed_snippet += line + ";"
             prefixed_snippet += "\'"
             prefixed_code.append(prefixed_snippet)
         code = prefixed_code
     print('\n\n'.join(code))
-

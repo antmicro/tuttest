@@ -19,13 +19,16 @@ tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-co
 * `[<snippet_name>]`: if absent, extract all the snippets. If present, this is the name of the snippet
   (or snippets, with names separated by `,`) that you want to extract.
   Note that unnamed snippets can still be referred to as `unnamedX`, where `X`
-  is the snippet's order in the file (starting from 0). See examples below.
+  is the snippet's order in the file (starting from 0). See [naming snippets](#naming-snippets).
 
 ### Optional flags
 
 * `--prefix-lines-with`: add whatever command you provide as `<prefix>` at the beginning of the snippet
 * `--single-command`: if provided, all snippets from `<snippet_name>` (if specified) will be
   packed into a one-liner, separated with `;`.
+* `--language`: if provided, filter out snippets for a specified `<lang>` language.
+* `--enable-transformers`: if provided, enable [snippet transformer](#snippet-transformers) execution
+  for snippets that specify one.
 
 ## Programmatic use
 
@@ -36,50 +39,165 @@ tuttest <file_name> [<snippet_name>] [--prefix-lines-with <prefix>] [--single-co
   * `extra_roles` - Sphinx or other rst roles which the file might include, so that the parser does not die
   * `parse` - whether to parse the snippet, see below
 
+* `transform_snippet` - run the snippet through a transformation command. Returns transformed snippet. Args:
+  
+  * `snippet` - target snippet
+  * `transform_cmd` - optional transformation command. If provided, will override the transformer stored in snippet metadata.
+
 * `parse_snippet` - parse the snippet into a (prompt, command, result) sequence list. Useful for autoexecuting of docs.
 
-### Naming snippets externally
+## Metadata
 
-The `names` argument helps in the Pythonic use of `tuttest` - whenever you can't or don't want to change the documentation you want to test by naming snippets inside the docs, but you still want to keep some structure, you might want to sue this feature to name snippets extracted from a doc. An example below:
+`tuttest` allows you to attach additional information to a snippet in a form of key-value pairs called metadata.
+The basic syntax for metadata is as follows:
 
+````md
+<!-- key1="value1"; key2="value2" -->
+```sh
+echo "Sample markdown snippet"
 ```
-names = ['first_name', 'some_other_name', 'and_yet_another'] 
-s = get_snippets('path/to/file.rst', names=names)
-print(s['first_name'])
-# prints the snippet text of the first snippet found in the file
-```
-
-Of course this way you will rely on the order of the snippets, but perhaps this is not a bad thing.
-
-### Additional metadata
-
-Besides snippet names, you can also pass your own, custom metadata, which will be extracted by `get_snippets`.
-Each value should be separated by `;`.
-You can use this when trying to implement more complicated logic, for example
-given snippets targeting a specific platform:
 ````
-<!-- name="os-info"; target="linux" -->
+
+````rst
+.. code-block:: sh
+
+   echo "Sample rst snippet"
+
+..
+   meta: key1="value1"; key2="value2"
+````
+
+Each pair takes the form of `key="value"`. Subsequent values are separated with `;`.
+
+The metadata is accessible through the `Snippet.meta` property:
+
+```py
+from tuttest import get_snippets
+
+for snip in get_snippets('path/to/file/md').values():
+  print(snip.meta)
 ```
+
+You can use this mechanism to implement specialized logic targeted specifically for your use case.
+For example, you could provide platform-specific snippets in your documentation
+and then filter them out in testing based on the platform of the testing environment:
+
+````md
+<!-- target="linux" -->
+```sh
 cat /etc/os-release
 ```
 
-<!-- name="os-info2"; target="windows" -->
-```
+<!-- target="windows" -->
+```sh
 ver
 ```
 ````
 
-you can run only snippets for your current platform:
-```
+```py
 import sys
+from tuttest import get_snippets
 
-snippets = get_snippets('path/to/file.md')
-
-for snippet in snippets.values():
-  if snippet.meta.get('target') == sys.name:
-    run_snippet(snippet)
-    ...
+for snip in get_snippets('path/to/file.md').values():
+  if snip.meta.get('target') == sys.name:
+    run_snippet(snip)
 ```
+
+`tuttest` makes use of this mechanism to provide additional functionality using specialized keys:
+
+### Naming snippets
+
+By default, `tuttest` extracts all snippets from a given file.
+In addition, specific snippet can only be accessed by iterating over all of them.
+
+To fix both of these problems, `tuttest` provides a way to name individual snippets
+using the `name` keyword:
+
+````md
+<!-- name="my_snippet" -->
+```sh
+echo hello
+```
+
+<!-- name="my_snippet2" -->
+```sh
+echo hello2
+```
+````
+
+You can specify which snippets you want returned by providing `tuttest` with list of target names.
+Both cli and library usages are supported:
+
+```sh
+tuttest path/to/readme.md my_snippet
+```
+
+```py
+from tuttest import get_snippets
+
+snip = get_snippets('path/to/readme.md', names=['my_snippet'])
+```
+
+In addition, named snippets can be accessed directly using their name:
+
+```py
+from tuttest import get_snippets
+
+snip = get_snippets('path/to/readme.md')
+
+my_snippet = snip['my_snippet']
+```
+
+### Snippet transformers
+
+Sometimes, you might want to slightly modify snippet contents, depending on execution context.
+
+For example, in normal case, your build instructions would point the end user to use the default branch:
+
+````md
+<!-- name="fetch-repo" -->
+```sh
+git clone https://github.com/your/repo.git
+```
+...
+````
+
+The issue with this approach is that this snippet would always end up fetching the default branch,
+even when you were making changes on a different branch.
+This is especially important if you wanted to use `tuttest` in CI tests, since instead of testing your changes,
+they would keep running off of the default branch.
+
+To fix this problem, `tuttest` allows you to specify a snippet transformer using the `transformer` keyword:
+
+````md
+<!-- name="fetch-repo"; transformer="echo $TUTTEST_INPUT --branch $(git branch --show-current)" -->
+```sh
+git clone https://github.com/your/repo.git
+```
+...
+````
+
+By default, `tuttest` ignores all transformers as it's primary usage is to test documentation examples as it.
+To enable snippet transformers, you have to explicitly opt-in into their usage,
+either by calling `tuttest` with the `--enable-transformers` flag or by passing
+a snippet returned from `get_snippets` through `transform_snippet`,
+depending on whether you're using `tuttest` from cli or as a library.
+
+`tuttest` passes the original contents of the snippet to a transformer on standard input.
+The transformers job is to produce an updated snippet on standard output.
+
+Transformers are executed as if they were called from your shell,
+meaning that you can use any command or chain of commands to to act as a transformer.
+
+The working directory for transformer execution is set to the parent directory of the file the original snippet is from.
+If the transformer command is a relative path, it will be resolved relative to this directory.
+
+In addition to original snippet contents, the transformer is passed additional information as environment variables:
+
+* `TUTTEST_INPUT` - contains original snippet contents. Useful in simpler cases, like appending text
+* `TUTTEST_FILE` - file name of the file the snippet is from
+* `TUTTEST_DIR` - the working directory set for the current transformer
+* `TUTTEST_SNIPPET` - contains snippet name for the snippet currently being transformed.
 
 ## Examples
 
@@ -95,10 +213,12 @@ Therefore, the output produced by `tuttest` should be the same for both cases.
    echo "This is the first unnamed snippet"
   
 .. code-block:: bash
-   :name: bash-tutorial
 
    echo "This is a named snippet"
    printf "1 + 2 = %d\n" $((1+2))
+
+..
+  meta: name="bash-tutorial"
 
 .. code-block:: bash
 

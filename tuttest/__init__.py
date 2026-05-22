@@ -1,26 +1,53 @@
-from collections import OrderedDict
-from typing import Optional, List, Dict
 import re
+import subprocess
+import sys
+from collections import OrderedDict
+from dataclasses import dataclass, field
+from os import environ
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
-def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -> OrderedDict:
 
+@dataclass
+class Command:
+    prompt: str
+    command: str
+    result: str = ''
+
+
+@dataclass
+class Snippet:
+    text: str = ''
+    lang: str = ''
+    meta: Dict = field(default_factory=dict)
+    commands: List[Command] = field(default_factory=list)
+    file: str = ''
+    pos: Optional[Tuple[int, int]] = None
+
+
+def parse_rst(
+    text: str, names: Optional[List[str]] = None, extra_roles: List[str] = []
+) -> OrderedDict[str, Snippet]:
     snippets = OrderedDict()
+    from docutils import nodes
     from docutils.core import publish_doctree
 
     # Sphinx roles
     from docutils.parsers.rst import roles
-    from docutils import nodes
+
     roles.register_generic_role('kbd', nodes.emphasis)
     roles.register_generic_role('ref', nodes.emphasis)
 
     # Sphinx-tabs extension directives
     from docutils.parsers.rst import directives
     from docutils.parsers.rst.directives.body import Compound
+
     directives.register_directive('tabs', Compound)
     directives.register_directive('group-tab', Compound)
 
     # Sphinx jinja extension directives
     from docutils.parsers.rst.directives.body import LineBlock
+
     jinja = LineBlock
     jinja.option_spec = {'file': str}
     directives.register_directive('jinja', jinja)
@@ -32,9 +59,12 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
     doctree = publish_doctree(text)
 
     def is_literal_block(node):
-        return (node.tagname == 'literal_block')
+        return node.tagname == 'literal_block'
 
-    # TODO: getting lang is tricky, as it's just one of the classes at this point. Another one is 'code', but there can also be user-set classes. Perhaps we should just match against a language array, but this is not optimal. Otherwise we have to do full RST parsing...
+    # TODO: Getting lang is tricky, as it's just one of the classes at this point.
+    #       Another one is 'code', but there can also be user-set classes.
+    #       Perhaps we should just match against a language array, but this is not optimal.
+    #       Otherwise we have to do full RST parsing...
 
     literal_blocks = doctree.traverse(condition=is_literal_block)
 
@@ -52,13 +82,16 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
                 name = names[idx]
                 snippet.meta['name'] = name
             else:
-                name = 'unnamed'+str(idx)
+                name = 'unnamed' + str(idx)
             snippets[name] = snippet
 
-        end = block.line + len(block.astext().strip().splitlines())
-        snippet.pos = (block.line, end - 1)
+        if block.line:
+            end = block.line + len(block.astext().strip().splitlines())
+            snippet.pos = (block.line, end - 1)
 
-        next_node = next(block.findall(include_self=False, descend=False, siblings=True), None)
+        next_node = next(
+            block.findall(include_self=False, descend=False, siblings=True), None
+        )
         if next_node is not None and next_node.tagname == 'comment':
             text = next_node.astext()
             if text.strip().startswith('meta:'):
@@ -66,8 +99,10 @@ def parse_rst(text: str, names: List[str] = None, extra_roles: List[str] = []) -
 
     return snippets
 
-def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
 
+def parse_markdown(
+    text: str, names: Optional[List[str]] = None
+) -> OrderedDict[str, Snippet]:
     snippets = OrderedDict()
     lines = text.split('\n')
 
@@ -87,7 +122,7 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
                 if 'name' in snippet.meta:
                     snippets[snippet.meta['name']] = snippet
                 else:
-                    snippets['unnamed'+str(len(snippets))] = snippet
+                    snippets['unnamed' + str(len(snippets))] = snippet
                 snippet.pos = (block_line, i + 1)
                 inside = False
             else:
@@ -102,7 +137,7 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
                 # look in previous line for metadata in for key1=val1 ; key2=val2
                 if prevl is not None:
                     prevl = prevl.strip()
-                    if prevl[0:4] == "<!--" and prevl[-3:] == "-->" :
+                    if prevl[0:4] == "<!--" and prevl[-3:] == "-->":
                         meta = parse_meta(prevl[4:-4])
                         snippet.meta.update(meta)
         else:
@@ -113,60 +148,115 @@ def parse_markdown(text: str, names: List[str] = None) -> OrderedDict:
         prevl = l
     return snippets
 
+
 def parse_meta(line: str) -> Dict[str, str]:
     meta = dict()
-    prev = None
-    variables = line.split(';')
-    for v in variables:
-        split = v.split('=', 1)
-        if len(split) == 1:
-            meta[prev] += ';{}'.format(v.rstrip().rstrip('"'))
-            continue
+    input = line.lstrip()
+    while len(input) > 0:
+        key, sep, input = input.partition("=")
+        assert len(sep) > 0, f"Unexpected text '{key}' (meta var not found)"
+        assert len(key) > 0, f"Empty meta key in '{input}'"
 
-        key = split[0].strip()
-        meta[key] = split[1].strip().strip('"')
-        prev = key
+        quote, input = input[0], input[1:]
+        assert (
+            quote == "'" or quote == '"'
+        ), f"Unquoted value for variable '{key}' (expected either `'` or `\"`)"
+
+        val = ""
+        while len(input) > 0:
+            cmd, _, input = input.partition(";")
+            if cmd.rstrip()[-1] == quote:
+                val += cmd.rstrip()[:-1]
+                break
+
+            val += f"{cmd};"
+        else:
+            raise AssertionError(
+                f"Unterminated meta var '{key}' (closing `{quote}` not found)"
+            )
+
+        meta[key] = val
+
+        input = input.lstrip()
+
     return meta
 
 
-def get_snippets(filename: str, *, names: List[str] = None, extra_roles: List[str] = [], parse: bool = False) -> OrderedDict:
+def get_snippets(
+    filename: str,
+    *,
+    names: Optional[List[str]] = None,
+    extra_roles: List[str] = [],
+    parse: bool = False,
+) -> OrderedDict[str, Snippet]:
     '''Top level function. Use this one instead of the underlying "parse_rst" etc.'''
 
     text = open(filename, 'r+', encoding='utf-8').read()
     snippets = None
     if filename.endswith('.rst') or filename.endswith('.rest'):
         snippets = parse_rst(text, names, extra_roles)
-    else: # the default is markdown
+    else:  # the default is markdown
         snippets = parse_markdown(text, names)
     if parse:
         for s in snippets.values():
             s.commands = parse_snippet(s.text)
+    for s in snippets.values():
+        s.file = filename
+
     return snippets
 
-from dataclasses import dataclass, field
 
-@dataclass
-class Command:
-    prompt: str
-    command: str
-    result: str = ''
+def transform_snippet(
+    snippet: Snippet, transformer_cmd: Optional[str | List[str]] = None
+) -> Snippet:
+    '''Runs the transformer command in a subprocess on a given `Snippet`.'''
+    origin = Path(snippet.file)
 
-@dataclass
-class Snippet:
-    text: List[str] = field(default_factory=list)
-    lang: str = ''
-    meta: Dict = field(default_factory=dict)
-    commands: List[Command] = field(default_factory=list)
-    pos: (int, int) = (0, 0)
+    env = {
+        'TUTTEST_INPUT': snippet.text,
+        'TUTTEST_FILE': origin.name,
+        'TUTTEST_DIR': origin.absolute().parent,
+        'TUTTEST_SNIPPET': snippet.meta.get('name'),
+        **environ,
+    }
+
+    if transformer_cmd is None:
+        if snippet.meta.get("transformer") is None:
+            return snippet
+
+        transformer_cmd = str(snippet.meta["transformer"])
+
+    result = subprocess.run(
+        transformer_cmd,
+        input=snippet.text + '\n',
+        cwd=Path(snippet.file).absolute().parent,
+        env=env,
+        shell=True,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=sys.stdout,
+    )
+
+    return Snippet(
+        result.stdout,
+        snippet.lang,
+        snippet.meta,
+        snippet.commands,
+        snippet.file,
+        snippet.pos,
+    )
+
 
 # currently only parse Renode snippets
 def parse_snippet(snippet: str) -> List[Command]:
     prompt = re.compile(r'\n(\([a-zA-Z0-9\-]+\) *)([^\n]*)')
-    spl = prompt.split('\n'+snippet)
+    spl = prompt.split('\n' + snippet)
     commands = []
-    for i in range(1,len(spl),3):
-        commands.append(Command(spl[i].strip(), spl[i+1], spl[i+2]))
+    for i in range(1, len(spl), 3):
+        commands.append(Command(spl[i].strip(), spl[i + 1], spl[i + 2]))
     return commands
+
 
 def autoexec(snippet: Snippet, printer, executor, expector):
     if 'name' in snippet.meta:
@@ -175,7 +265,7 @@ def autoexec(snippet: Snippet, printer, executor, expector):
     else:
         printer(f"Executing unnamed snippet")
     # inject empty command to make sure we have the right prompt
-    executor('');
+    executor('')
     for c in snippet.commands:
         if c.prompt:
             printer(f"  {c.prompt}")

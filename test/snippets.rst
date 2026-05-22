@@ -6,15 +6,17 @@ This is a nice *rst* file.
 It's a `test <https://google.com>`_.
 
 .. code-block:: python
-   :name: something block
 
    def something(useless: str):
        a = 42
        print(a)
 
+..
+    meta: name="something"
+
 Suddenly, a paragraph.
 
-1. Other code using a literal block inside a list - this will not be parsed as there is no way to pass metadata::
+1. Other code using a literal block inside a list::
 
       def test():
           pass
